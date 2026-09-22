@@ -2,19 +2,13 @@ from pathlib import Path
 from ollama import chat
 import json
 
-
-
 question = """
 I changed my university password this morning.
 Now my Windows laptop won't connect to campus Wi-Fi,
 but my phone still works.
 """
 
-## WRITE ##
-service_status = {
-    "wifi": "operational"
-}
-
+service_status = {"wifi": "operational"}
 state = {
     "problem": question,
     "wi_fi status": "operational",
@@ -22,56 +16,81 @@ state = {
 }
 
 with open("state.json", "w") as file:
-    json.dump(
-        state,
-        file,
-        indent=2
-    )
+    json.dump(state, file, indent=2)
 
 with open("state.json", "r") as file:
     state = json.load(file)
-
 print(state)
 
-
-## SELECT CONTEXT FILES BASED ON QUESTION
-## Create the function that takes the student's question, takes some keywords and chooses the relevant files from the knowledge base. Return a list of the selected files.
-## For example, if the question has the kyeword "print" or "printer", then the function should return the file "knowledge/printer_setup.txt" in a list.
 def select_context(question):
-    pass
-
+    keyword_map = {
+        "password": "knowledge/password_changes.txt",
+        "wi-fi": "knowledge/wifi_setup.txt",
+        "wifi": "knowledge/wifi_setup.txt",
+        "campus": "knowledge/wifi_setup.txt",
+        "service": "knowledge/service_status.txt",
+        "status": "knowledge/service_status.txt"
+    }
+    q_lower = question.lower()
+    selected = set()
+    for kw, fp in keyword_map.items():
+        if kw in q_lower:
+            selected.add(fp)
+    return list(selected)
 
 selected_files = select_context(question)
 
-## READ SELECTED FILES and add their contents to the context variable.
 context = ""
+for fp in selected_files:
+    context += Path(fp).read_text()
+    context += "\n\n"
 
+def compress_context(context):
+    res = chat(
+        model="qwen",
+        options={
+            "temperature": 0.1,
+            "repeat_penalty": 1.5,
+            "num_predict": 250
+        },
+        messages=[
+            {
+                "role": "system",
+                "content": "Extract only the complete Windows eduroam Wi-Fi troubleshooting steps from the context. Output numbered steps only. No extra explanation, no macOS, no mobile content."
+            },
+            {"role": "user", "content": context}
+        ]
+    )
+    return res.message.content.strip()
 
-## 
-## COMPRESS CONTEXT
-## Add logic to compress the context from above by calling Qwen with "context" and the "question" as the parameter
-## The response from Qwen should be the compressed context. Store it in a variable called "compressed_context" 
+compressed_context = compress_context(context)
+print("\nCompressed context characters:", len(compressed_context))
+print("Compressed content:\n" + compressed_context)
 
-def compress_context(context, question):
-    pass
+response = chat(
+    model="qwen",
+    options={
+        "temperature": 0.1,
+        "repeat_penalty": 1.5,
+        "num_predict": 250
+    },
+    messages=[
+        {
+            "role": "system",
+            "content": "Turn the content below into a clean numbered list. Use ONLY the content given. Do NOT add any new steps, advice or disclaimers."
+        },
+        {"role": "user", "content": compressed_context}
+    ]
+)
 
-
-
-## Print the length of the compressed context
-print(len(compressed_context))
-
-## Now, call Qwen again with the compressed context and the student's question. Store the response in a variable called "response" and print the response from Qwen.
-## Ensure the model produces a structured output 
-
-
-
-
+print("\nSolution:")
 print(response.message.content)
 
-## WRITE the above output in an artifact called "state"
+state["relevant_files"] = selected_files
+state["compressed_context"] = compressed_context
+state["solution"] = response.message.content
 
-## Update the rest of the code so that it uses the "state" artifact as part of the context. 
-## It is important to ensure that the model uses only the relevant parts from the "state" artifact and not the entire artifact.
-## For this, you may have to think of a good structure for the "state" artifact and how to use it in the context.
+with open("state.json", "w") as file:
+    json.dump(state, file, indent=2)
 
-
+print("\nFinal state saved to state.json")

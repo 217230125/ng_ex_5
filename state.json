@@ -1,0 +1,11 @@
+{
+  "problem": "\nI changed my university password this morning.\nNow my Windows laptop won't connect to campus Wi-Fi,\nbut my phone still works.\n",
+  "wi_fi status": "operational",
+  "wi-fi_check": true,
+  "relevant_files": [
+    "knowledge/password_changes.txt",
+    "knowledge/wifi_setup.txt"
+  ],
+  "compressed_context": "1. Open Settings > Network & Internet >Wi-Fi.\n2. Select eduroam and enter your currently University Username (e.g., student09)and Password(e.g, P@sswOrd)).\n3. If you recently changed your university password Windows may still have the oldpassword cached).\n4 Choose \"Forget\" for existing Edroam network then reconnect usingyour new password.\n5.If connection stil fails confirm that University account is active",
+  "solution": "1) Open Settings > Network & Internet > Wi-Fi.\n2) Select eduroam and enter your currently university username (e.g., student09))and Password(e.g, P@sswOrd)).\"\n3)\" If you recently changedyouruniversitypasswordWindows may still have the old password cached).\"\n\n4 Choose \"Forget\" for existing Edroam network then reconnect usingyour new password."
+}
